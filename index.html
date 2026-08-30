@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#111827" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="財富7部曲" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <title>財富7部曲</title>
+  <style>
+    :root{
+      --bg:#f7f7f8;--card:#fff;--text:#111827;--muted:#6b7280;--line:#e5e7eb;
+      --accent:#111827;--ok:#047857;--warn:#b45309;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif}
+    .wrap{max-width:900px;margin:auto;padding:18px}
+    h1{font-size:26px;margin:8px 0 4px}
+    h2{font-size:18px;margin:0 0 12px}
+    p{color:var(--muted);line-height:1.5}
+    .grid{display:grid;gap:12px}
+    .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+    @media(min-width:760px){.stats{grid-template-columns:repeat(4,minmax(0,1fr))}.cols2{grid-template-columns:1fr 1fr}}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
+    .stat .label{font-size:12px;color:var(--muted)}
+    .stat .value{font-size:22px;font-weight:700;margin-top:5px}
+    label{display:block;font-size:13px;color:#374151}
+    input,select,button{font:inherit}
+    input,select{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:16px}
+    button{border:0;border-radius:10px;padding:11px 14px;background:var(--accent);color:white;font-weight:600;min-height:44px}
+    button.secondary{background:#fff;color:var(--text);border:1px solid var(--line)}
+    button.danger{background:#fff;color:#b91c1c;border:1px solid #fecaca}
+    .row{display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:10px}
+    @media(min-width:600px){.account-row{grid-template-columns:1.4fr 1fr 1fr auto}}
+    .progress{height:10px;border-radius:999px;background:#e5e7eb;overflow:hidden}
+    .progress>div{height:100%;background:#374151}
+    .spread{display:flex;justify-content:space-between;gap:12px}
+    .small{font-size:12px;color:var(--muted)}
+    .section-head{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+    .alloc{display:grid;gap:10px;grid-template-columns:repeat(2,minmax(0,1fr))}
+    @media(min-width:760px){.alloc{grid-template-columns:repeat(5,minmax(0,1fr))}}
+    .pill{padding:10px;border:1px solid var(--line);border-radius:12px;background:#fafafa}
+    .footer-note{font-size:12px;color:var(--muted);margin:18px 0 40px}
+    .notice{font-size:13px;border:1px solid var(--line);padding:10px 12px;border-radius:10px;background:#fafafa}
+    .actions{display:flex;gap:8px;flex-wrap:wrap}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>財富7部曲</h1>
+  <p>銀行資金、緊急備用金、財務目標與每月薪資分配，一個地方管理。</p>
+
+  <div class="grid stats">
+    <div class="card stat"><div class="label">銀行總資金</div><div class="value" id="totalCash">—</div></div>
+    <div class="card stat"><div class="label">備用金進度</div><div class="value" id="emPct">—</div></div>
+    <div class="card stat"><div class="label">目標進度</div><div class="value" id="goalPct">—</div></div>
+    <div class="card stat"><div class="label">每月薪資</div><div class="value" id="salaryStat">—</div></div>
+  </div>
+
+  <div class="card" style="margin-top:12px">
+    <div class="section-head">
+      <div><h2>1. 銀行資金</h2><div class="small">資料會保存於此裝置瀏覽器。</div></div>
+      <div class="actions">
+        <select id="currency" style="width:auto">
+          <option>HKD</option><option>TWD</option><option>CNY</option><option>USD</option><option>JPY</option>
+        </select>
+        <button id="addAccount">＋ 新增銀行</button>
+      </div>
+    </div>
+    <div id="accounts"></div>
+  </div>
+
+  <div class="grid cols2" style="margin-top:12px">
+    <div class="card">
+      <h2>2. 緊急備用金</h2>
+      <div class="grid" style="grid-template-columns:1fr 1fr">
+        <label>每月必要支出<input id="expense" type="number" min="0" step="100"></label>
+        <label>準備月數
+          <select id="months"><option value="3">3 個月</option><option value="6">6 個月</option><option value="9">9 個月</option><option value="12">12 個月</option></select>
+        </label>
+      </div>
+      <div style="margin-top:14px" class="spread"><span>建議目標</span><strong id="emTarget">—</strong></div>
+      <div class="spread"><span>目前已有</span><strong id="emSaved">—</strong></div>
+      <div class="spread"><span>仍差</span><strong id="emGap">—</strong></div>
+      <div class="progress" style="margin-top:12px"><div id="emBar"></div></div>
+      <p id="emHint" class="small"></p>
+    </div>
+
+    <div class="card">
+      <h2>3. 財務目標</h2>
+      <label>目標名稱<input id="goalName" maxlength="40"></label>
+      <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:8px">
+        <label>目標金額<input id="goalTarget" type="number" min="0" step="1000"></label>
+        <label>目前已有<input id="goalCurrent" type="number" min="0" step="1000"></label>
+      </div>
+      <div style="margin-top:14px" class="spread"><span>尚差</span><strong id="goalGap">—</strong></div>
+      <div class="progress" style="margin-top:12px"><div id="goalBar"></div></div>
+      <p id="goalHint" class="small"></p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:12px">
+    <h2>4. 每月工資分配</h2>
+    <label>每月實收薪資<input id="salary" type="number" min="0" step="100"></label>
+    <div class="alloc" id="allocations" style="margin-top:12px"></div>
+    <div id="allocStatus" class="notice" style="margin-top:12px"></div>
+  </div>
+
+  <div class="card" style="margin-top:12px">
+    <h2>5–7. 行動順序</h2>
+    <div class="grid" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+      <div class="pill">5. 處理高息負債</div>
+      <div class="pill">6. 持續投資</div>
+      <div class="pill">7. 財務自由目標</div>
+      <div class="pill" id="nextAction">下一步：—</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:12px">
+    <h2>備份與資料</h2>
+    <div class="actions">
+      <button id="exportBtn">匯出備份 JSON</button>
+      <button id="importBtn" class="secondary">匯入備份</button>
+      <button id="resetBtn" class="danger">清除全部資料</button>
+      <input id="importFile" type="file" accept="application/json" hidden>
+    </div>
+    <p class="small">建議定期匯出備份。刪除瀏覽器資料或更換手機時，本機資料可能會消失。</p>
+  </div>
+
+  <div class="footer-note">這是個人財務管理工具，不構成投資建議。真正的銀行帳戶資料不會自動連線；你輸入的數字只會儲存在這台裝置的瀏覽器 IndexedDB 中。</div>
+</div>
+
+<script>
+const DEFAULT = {
+  currency:"HKD",
+  accounts:[
+    {id:crypto.randomUUID(),name:"日常戶口",balance:42000,type:"daily"},
+    {id:crypto.randomUUID(),name:"緊急備用金",balance:65000,type:"emergency"}
+  ],
+  expense:18000, months:6, salary:35000,
+  goalName:"第一桶金", goalTarget:300000, goalCurrent:80000,
+  alloc:[
+    {key:"living",label:"生活",pct:50},
+    {key:"emergency",label:"備用金",pct:10},
+    {key:"invest",label:"投資",pct:20},
+    {key:"goal",label:"目標",pct:15},
+    {key:"fun",label:"自由用",pct:5}
+  ]
+};
+let state;
+
+const DB_NAME="wealth7-db", STORE="app", KEY="state";
+function openDB(){
+  return new Promise((resolve,reject)=>{
+    const req=indexedDB.open(DB_NAME,1);
+    req.onupgradeneeded=()=>{ if(!req.result.objectStoreNames.contains(STORE)) req.result.createObjectStore(STORE); };
+    req.onsuccess=()=>resolve(req.result); req.onerror=()=>reject(req.error);
+  });
+}
+async function loadState(){
+  try{
+    const db=await openDB();
+    const value=await new Promise((resolve,reject)=>{
+      const tx=db.transaction(STORE,"readonly");
+      const r=tx.objectStore(STORE).get(KEY);
+      r.onsuccess=()=>resolve(r.result); r.onerror=()=>reject(r.error);
+    });
+    return value || structuredClone(DEFAULT);
+  }catch(e){ return structuredClone(DEFAULT); }
+}
+async function saveState(){
+  try{
+    const db=await openDB();
+    await new Promise((resolve,reject)=>{
+      const tx=db.transaction(STORE,"readwrite");
+      tx.objectStore(STORE).put(state,KEY);
+      tx.oncomplete=resolve; tx.onerror=()=>reject(tx.error);
+    });
+  }catch(e){}
+}
+const $=id=>document.getElementById(id);
+const num=v=>Math.max(0,Number(v)||0);
+const pct=(a,b)=>b>0?Math.min(100,Math.max(0,a/b*100)):0;
+const sym=()=>({HKD:"HK$",TWD:"NT$",CNY:"¥",USD:"US$",JPY:"¥"})[state.currency]||"$";
+const money=n=>sym()+Math.round(num(n)).toLocaleString();
+
+function bindInput(id,key,parser=v=>v){
+  const el=$(id); el.value=state[key];
+  el.addEventListener("input",async()=>{state[key]=parser(el.value); await saveState(); render();});
+  if(el.tagName==="SELECT") el.addEventListener("change",async()=>{state[key]=parser(el.value); await saveState(); render();});
+}
+function renderAccounts(){
+  const box=$("accounts"); box.innerHTML="";
+  state.accounts.forEach((a,idx)=>{
+    const row=document.createElement("div"); row.className="row account-row";
+    row.innerHTML=`
+      <label>銀行／帳戶<input data-f="name" value="${escapeHTML(a.name)}"></label>
+      <label>結餘<input data-f="balance" type="number" min="0" step="100" value="${a.balance}"></label>
+      <label>用途<select data-f="type">
+        <option value="daily" ${a.type==="daily"?"selected":""}>日常</option>
+        <option value="emergency" ${a.type==="emergency"?"selected":""}>緊急備用金</option>
+        <option value="savings" ${a.type==="savings"?"selected":""}>儲蓄</option>
+        <option value="investment" ${a.type==="investment"?"selected":""}>投資</option>
+      </select></label>
+      <button class="danger" data-del="${idx}">刪除</button>`;
+    box.appendChild(row);
+    row.querySelectorAll("[data-f]").forEach(el=>{
+      const f=el.dataset.f;
+      el.addEventListener(el.tagName==="SELECT"?"change":"input",async()=>{
+        state.accounts[idx][f]=f==="balance"?num(el.value):el.value;
+        await saveState(); render();
+      });
+    });
+    row.querySelector("[data-del]").addEventListener("click",async()=>{
+      state.accounts.splice(idx,1); await saveState(); renderAccounts(); render();
+    });
+  });
+}
+function renderAlloc(){
+  const box=$("allocations"); box.innerHTML="";
+  state.alloc.forEach((a,i)=>{
+    const d=document.createElement("div"); d.className="pill";
+    d.innerHTML=`<label>${a.label}<input type="number" min="0" max="100" step="1" value="${a.pct}"></label><div class="small" data-amt></div>`;
+    const inp=d.querySelector("input");
+    inp.addEventListener("input",async()=>{a.pct=Math.min(100,num(inp.value)); await saveState(); render();});
+    box.appendChild(d);
+  });
+}
+function render(){
+  const total=state.accounts.reduce((s,a)=>s+num(a.balance),0);
+  const emSaved=state.accounts.filter(a=>a.type==="emergency").reduce((s,a)=>s+num(a.balance),0);
+  const emTarget=num(state.expense)*num(state.months), emGap=Math.max(0,emTarget-emSaved), emP=pct(emSaved,emTarget);
+  const goalGap=Math.max(0,num(state.goalTarget)-num(state.goalCurrent)), goalP=pct(state.goalCurrent,state.goalTarget);
+  $("totalCash").textContent=money(total); $("emPct").textContent=Math.round(emP)+"%"; $("goalPct").textContent=Math.round(goalP)+"%"; $("salaryStat").textContent=money(state.salary);
+  $("emTarget").textContent=money(emTarget); $("emSaved").textContent=money(emSaved); $("emGap").textContent=money(emGap); $("emBar").style.width=emP+"%";
+  $("goalGap").textContent=money(goalGap); $("goalBar").style.width=goalP+"%";
+  const emAlloc=state.alloc.find(a=>a.key==="emergency"); const goalAlloc=state.alloc.find(a=>a.key==="goal");
+  const emMonthly=num(state.salary)*(emAlloc?emAlloc.pct:0)/100; const goalMonthly=num(state.salary)*(goalAlloc?goalAlloc.pct:0)/100;
+  $("emHint").textContent=emGap===0?"備用金已達標。":emMonthly>0?`按目前分配約 ${Math.ceil(emGap/emMonthly)} 個月可補足。`:"目前沒有分配薪資到備用金。";
+  $("goalHint").textContent=goalGap===0?"目標已達成。":goalMonthly>0?`按目前投入約 ${Math.ceil(goalGap/goalMonthly)} 個月可達成（未計投資報酬）。`:"目前沒有分配薪資到此目標。";
+  document.querySelectorAll("[data-amt]").forEach((el,i)=>{el.textContent=money(num(state.salary)*state.alloc[i].pct/100)+"/月";});
+  const allocTotal=state.alloc.reduce((s,a)=>s+num(a.pct),0);
+  $("allocStatus").textContent=allocTotal===100?"✓ 分配剛好 100%。":allocTotal>100?`目前 ${allocTotal}%，超出 ${allocTotal-100}%。`:`目前 ${allocTotal}%，尚有 ${100-allocTotal}% 未分配。`;
+  $("nextAction").textContent=emGap>0?"下一步：優先補足備用金":goalGap>0?"下一步：集中完成財務目標":"下一步：提高長期投資比例";
+}
+function escapeHTML(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));}
+
+(async()=>{
+  state=await loadState();
+  $("currency").value=state.currency;
+  ["expense","months","salary","goalName","goalTarget","goalCurrent"].forEach(id=>$(id).value=state[id]);
+  $("currency").addEventListener("change",async e=>{state.currency=e.target.value; await saveState(); render();});
+  bindInput("expense","expense",num); bindInput("months","months",num); bindInput("salary","salary",num);
+  bindInput("goalName","goalName",v=>v); bindInput("goalTarget","goalTarget",num); bindInput("goalCurrent","goalCurrent",num);
+  $("addAccount").addEventListener("click",async()=>{state.accounts.push({id:crypto.randomUUID(),name:"新銀行帳戶",balance:0,type:"savings"}); await saveState(); renderAccounts(); render();});
+  $("exportBtn").addEventListener("click",()=>{
+    const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
+    const url=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download="wealth7-backup.json"; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000);
+  });
+  $("importBtn").addEventListener("click",()=>$("importFile").click());
+  $("importFile").addEventListener("change",async e=>{
+    const f=e.target.files[0]; if(!f)return;
+    try{const x=JSON.parse(await f.text()); if(!x||!Array.isArray(x.accounts)||!Array.isArray(x.alloc)) throw new Error(); state=x; await saveState(); location.reload();}
+    catch{alert("備份檔格式不正確。");}
+  });
+  $("resetBtn").addEventListener("click",async()=>{if(confirm("確定清除全部資料？")){state=structuredClone(DEFAULT); await saveState(); location.reload();}});
+  renderAccounts(); renderAlloc(); render();
+  if("serviceWorker" in navigator){navigator.serviceWorker.register("./sw.js").catch(()=>{});}
+})();
+</script>
+</body>
+</html>
